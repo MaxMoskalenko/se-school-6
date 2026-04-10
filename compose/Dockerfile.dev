@@ -1,0 +1,10 @@
+FROM golang:1.25-alpine
+
+RUN apk add build-base
+RUN apk add libwebp-dev
+RUN go install github.com/cespare/reflex@latest
+COPY reflex.conf /
+
+WORKDIR /app
+
+ENTRYPOINT ["reflex", "-c", "/reflex.conf"]
