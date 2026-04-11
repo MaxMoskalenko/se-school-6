@@ -90,12 +90,16 @@ func main() {
 	}
 }
 
-func migrate(dsn string) error {
+func migrate(dsn string) (err error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		return err
+		return
 	}
-	defer db.Close()
+	defer func() {
+		if cerr := db.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	goose.SetBaseFS(migrations)
 
