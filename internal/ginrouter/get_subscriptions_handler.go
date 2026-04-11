@@ -16,10 +16,14 @@ type subscriptionResponse struct {
 	LastSeenTag *string `json:"last_seen_tag"`
 }
 
-func getSubscriptionsHandler(app *api.App, c *gin.Context) {
+func getSubscriptionsHandler(app *api.App, cfg Config, c *gin.Context) {
 	var req getSubscriptionsRequest
 	if err := c.BindQuery(&req); err != nil {
 		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})
+		return
+	}
+
+	if !validateAuthEmail(c, req.Email, cfg.ValidateAuthEmail) {
 		return
 	}
 

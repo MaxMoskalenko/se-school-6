@@ -13,10 +13,14 @@ type postSubscribeRequest struct {
 	Repo  string `json:"repo" binding:"required,repo"`
 }
 
-func postSubscribeHandler(app *api.App, c *gin.Context) {
+func postSubscribeHandler(app *api.App, cfg Config, c *gin.Context) {
 	var req postSubscribeRequest
 	if err := c.BindJSON(&req); err != nil {
 		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})
+		return
+	}
+
+	if !validateAuthEmail(c, req.Email, cfg.ValidateAuthEmail) {
 		return
 	}
 

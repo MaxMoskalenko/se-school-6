@@ -59,10 +59,12 @@ func main() {
 		AuthToken: cfg.Github.AuthToken,
 	})
 
-	app := api.NewApp(repo, api.Config{HostURL: cfg.Api.HostURL}, mailSvc, gitSvc)
+	app := api.NewApp(repo, api.Config{HostURL: cfg.Api.HostURL, JWTSecret: cfg.Api.JWTSecret}, mailSvc, gitSvc)
 
 	router, err := ginrouter.New(app, ginrouter.Config{
-		Port: cfg.Router.Port,
+		Port:              cfg.Router.Port,
+		JWTSecret:         cfg.Api.JWTSecret,
+		ValidateAuthEmail: cfg.Api.ValidateAuthEmail,
 	})
 	if err != nil {
 		log.Fatalf("failed to create router: %v", err)

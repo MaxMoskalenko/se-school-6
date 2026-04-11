@@ -9,7 +9,7 @@ type getUnsubscribeRequest struct {
 	Token string `uri:"token" binding:"required"`
 }
 
-func getUnsubscribeHandler(app *api.App, c *gin.Context) {
+func getUnsubscribeHandler(app *api.App, _ Config, c *gin.Context) {
 	var req getUnsubscribeRequest
 	if err := c.BindUri(&req); err != nil {
 		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})

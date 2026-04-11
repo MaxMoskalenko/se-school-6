@@ -21,7 +21,9 @@ type Router struct {
 }
 
 type Api struct {
-	HostURL string `mapstructure:"host_url"`
+	HostURL           string `mapstructure:"host_url"`
+	JWTSecret         string `mapstructure:"jwt_secret"`
+	ValidateAuthEmail bool   `mapstructure:"validate_auth_email"`
 }
 
 type Database struct {
@@ -62,7 +64,9 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		Api: Api{
-			HostURL: viper.GetString("API_HOST_URL"),
+			HostURL:           viper.GetString("API_HOST_URL"),
+			JWTSecret:         viper.GetString("API_JWT_SECRET"),
+			ValidateAuthEmail: viper.GetBool("API_VALIDATE_AUTH_EMAIL"),
 		},
 		Router: Router{
 			Port: viper.GetString("ROUTER_PORT"),

@@ -31,6 +31,7 @@ migrations/postgres/        -- goose SQL migrations
 
 | Method | Path                      | Description                 |
 | ------ | ------------------------- | --------------------------- |
+| POST   | `/api/auth`               | Get a JWT token             |
 | POST   | `/api/subscribe`          | Subscribe to a repository   |
 | GET    | `/api/confirm/:token`     | Confirm subscription (DOI)  |
 | GET    | `/api/unsubscribe/:token` | Unsubscribe from repository |
@@ -82,6 +83,8 @@ Unit tests cover all API methods and scanner logic using mock implementations of
 | Variable                                 | Description                                                       | Default                 |
 | ---------------------------------------- | ----------------------------------------------------------------- | ----------------------- |
 | `API_HOST_URL`                           | Base URL for DOI links in emails                                  | `http://localhost:8080` |
+| `API_JWT_SECRET`                         | Secret key for signing/verifying JWT tokens                       |                         |
+| `API_VALIDATE_AUTH_EMAIL`                | Validate that JWT email matches request email                     | `false`                 |
 | `ROUTER_PORT`                            | HTTP server port                                                  | `8080`                  |
 | `DATABASE_HOST`                          | PostgreSQL host                                                   | `localhost`             |
 | `DATABASE_PORT`                          | PostgreSQL port                                                   | `5432`                  |
@@ -103,3 +106,11 @@ I wasn't able to verify my postmark account to send emails to the external (outs
 
 ![Request demo](public/request_demo.png)
 ![Release demo](public/release_demo.png)
+
+## Authorisation
+
+Authorisation is optional and can be disabled by setting `API_VALIDATE_AUTH_EMAIL=false`. If enabled, the email in the JWT token must match the email in the request (either body or query parameters) for all endpoints except `/api/auth`. This ensures that users can only access their own subscriptions and cannot impersonate others by using a valid JWT with a different email.
+
+To access the API, clients must first obtain a JWT token by sending a POST request to `/api/auth` with their email. The server will generate a token containing the email as a claim and return it in the response. The client must then include this token in the `Authorization` header (as `Bearer <token>`) for all subsequent requests to protected endpoints.
+
+This feature is disabled by default

@@ -9,7 +9,7 @@ type getConfirmRequest struct {
 	Token string `uri:"token" binding:"required"`
 }
 
-func getConfirmHandler(app *api.App, c *gin.Context) {
+func getConfirmHandler(app *api.App, _ Config, c *gin.Context) {
 	var req getConfirmRequest
 	if err := c.BindUri(&req); err != nil {
 		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})

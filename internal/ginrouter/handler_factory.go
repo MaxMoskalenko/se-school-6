@@ -7,14 +7,15 @@ import (
 
 type HandlerFactory struct {
 	app *api.App
+	cfg Config
 }
 
-func NewHandlerFactory(app *api.App) *HandlerFactory {
-	return &HandlerFactory{app: app}
+func NewHandlerFactory(app *api.App, cfg Config) *HandlerFactory {
+	return &HandlerFactory{app: app, cfg: cfg}
 }
 
-func (hf *HandlerFactory) Handler(handler func(app *api.App, c *gin.Context)) gin.HandlerFunc {
+func (hf *HandlerFactory) Handler(handler func(app *api.App, cfg Config, c *gin.Context)) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		handler(hf.app, c)
+		handler(hf.app, hf.cfg, c)
 	}
 }

@@ -14,7 +14,7 @@ type Router struct {
 }
 
 func New(app *api.App, cfg Config) (Router, error) {
-	factory := NewHandlerFactory(app)
+	factory := NewHandlerFactory(app, cfg)
 
 	if err := bindvalidator.Register(); err != nil {
 		return Router{}, err
@@ -24,10 +24,14 @@ func New(app *api.App, cfg Config) (Router, error) {
 	r.Use(gin.Recovery())
 
 	apiGroup := r.Group("/api")
-	apiGroup.POST("/subscribe", factory.Handler(postSubscribeHandler))
-	apiGroup.GET("/confirm/:token", factory.Handler(getConfirmHandler))
-	apiGroup.GET("/unsubscribe/:token", factory.Handler(getUnsubscribeHandler))
-	apiGroup.GET("/subscriptions", factory.Handler(getSubscriptionsHandler))
+	apiGroup.POST("/auth", factory.Handler(postAuthHandler))
+
+	authorized := apiGroup.Group("")
+	authorized.Use(authMiddleware(cfg.JWTSecret))
+	authorized.POST("/subscribe", factory.Handler(postSubscribeHandler))
+	authorized.GET("/confirm/:token", factory.Handler(getConfirmHandler))
+	authorized.GET("/unsubscribe/:token", factory.Handler(getUnsubscribeHandler))
+	authorized.GET("/subscriptions", factory.Handler(getSubscriptionsHandler))
 
 	return Router{
 		server: &http.Server{

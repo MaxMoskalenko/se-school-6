@@ -1,5 +1,6 @@
 package api
 
 type Config struct {
-	HostURL string
+	HostURL   string
+	JWTSecret string
 }
