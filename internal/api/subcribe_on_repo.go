@@ -31,15 +31,31 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 		return domain.NewError(http.StatusInternalServerError, err)
 	}
 
-	gitRepoToCreate := domain.NewGitRepository(cmd.RepoOwner, cmd.RepoName).WithNewID()
 	gitRepo, err := a.repo.ReadGitRepository(ctx, domain.ReadGitRepositoryParams{
-		ByOwner:           &cmd.RepoOwner,
-		ByName:            &cmd.RepoName,
-		CreateIfNotExists: gitRepoToCreate,
+		ByOwner: &cmd.RepoOwner,
+		ByName:  &cmd.RepoName,
 	})
 	if err != nil {
-		log.Printf("error: failed to read or create git repository owner=%s name=%s: %v", cmd.RepoOwner, cmd.RepoName, err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		exists, ghErr := a.gitSvc.RepoExists(ctx, cmd.RepoOwner, cmd.RepoName)
+		if ghErr != nil {
+			log.Printf("error: failed to check repo on github owner=%s name=%s: %v", cmd.RepoOwner, cmd.RepoName, ghErr)
+			return domain.NewError(http.StatusInternalServerError, ghErr)
+		}
+		if !exists {
+			log.Printf("error: repo not found on github owner=%s name=%s", cmd.RepoOwner, cmd.RepoName)
+			return domain.NewError(http.StatusNotFound, errRepoNotFound)
+		}
+
+		gitRepoToCreate := domain.NewGitRepository(cmd.RepoOwner, cmd.RepoName).WithNewID()
+		gitRepo, err = a.repo.ReadGitRepository(ctx, domain.ReadGitRepositoryParams{
+			ByOwner:           &cmd.RepoOwner,
+			ByName:            &cmd.RepoName,
+			CreateIfNotExists: gitRepoToCreate,
+		})
+		if err != nil {
+			log.Printf("error: failed to create git repository owner=%s name=%s: %v", cmd.RepoOwner, cmd.RepoName, err)
+			return domain.NewError(http.StatusInternalServerError, err)
+		}
 	}
 
 	sub := domain.NewSubscription().

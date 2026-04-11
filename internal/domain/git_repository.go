@@ -1,12 +1,18 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type GitRepository struct {
-	id          uuid.UUID
-	owner       string
-	name        string
-	lastSeenTag *string
+	id            uuid.UUID
+	owner         string
+	name          string
+	lastSeenTag   *string
+	lastCheckedAt *time.Time
+	subscriptions []*Subscription
 }
 
 func NewGitRepository(owner, name string) *GitRepository {
@@ -45,4 +51,22 @@ func (r GitRepository) Name() string {
 
 func (r GitRepository) LastSeenTag() *string {
 	return r.lastSeenTag
+}
+
+func (r *GitRepository) WithLastCheckedAt(t *time.Time) *GitRepository {
+	r.lastCheckedAt = t
+	return r
+}
+
+func (r GitRepository) LastCheckedAt() *time.Time {
+	return r.lastCheckedAt
+}
+
+func (r *GitRepository) AttachSubscription(sub *Subscription) *GitRepository {
+	r.subscriptions = append(r.subscriptions, sub)
+	return r
+}
+
+func (r GitRepository) Subscriptions() []*Subscription {
+	return r.subscriptions
 }

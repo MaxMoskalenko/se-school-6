@@ -12,6 +12,8 @@ type Repository interface {
 	ReadUser(ctx context.Context, params ReadUserParams) (*User, error)
 
 	ReadGitRepository(ctx context.Context, params ReadGitRepositoryParams) (*GitRepository, error)
+	ReadGitRepositories(ctx context.Context, params ReadGitRepositoriesParams) ([]*GitRepository, error)
+	SaveGitRepository(ctx context.Context, repo *GitRepository) error
 
 	SaveRepositorySubscription(ctx context.Context, subscription *Subscription, params SaveRepositorySubscriptionParams) error
 	ReadRepositorySubscription(ctx context.Context, params ReadRepositorySubscriptionParams) (*Subscription, error)
@@ -22,6 +24,14 @@ type ReadUserParams struct {
 	ByEmail *string
 
 	CreateIfNotExists *User
+}
+
+type ReadGitRepositoriesParams struct {
+	OnlyWithActiveSubscriptions bool
+	SortByLastCheckedAt         bool
+
+	WithSubscriptions bool
+	WithUser          bool
 }
 
 type ReadGitRepositoryParams struct {
@@ -45,6 +55,7 @@ type ReadRepositorySubscriptionParams struct {
 
 type ReadRepositorySubscriptionsParams struct {
 	ByUserEmail *string
+	OnlyActive  bool
 
 	WithDOITokens  bool
 	WithUser       bool

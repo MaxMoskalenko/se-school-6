@@ -6,6 +6,8 @@ import (
 	"github.com/mrz1836/postmark"
 )
 
+var _ Interface = (*Postmark)(nil)
+
 type Postmark struct {
 	client *postmark.Client
 	cfg    PostmarkConfig

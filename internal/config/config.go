@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -12,6 +13,7 @@ type Config struct {
 	Database Database `mapstructure:"database"`
 	Postmark Postmark `mapstructure:"postmark"`
 	Github   Github   `mapstructure:"github"`
+	Scanner  Scanner  `mapstructure:"scanner"`
 }
 
 type Router struct {
@@ -42,6 +44,10 @@ type Postmark struct {
 
 type Github struct {
 	AuthToken *string `mapstructure:"auth_token"`
+}
+
+type Scanner struct {
+	Interval time.Duration
 }
 
 func Load() (*Config, error) {
@@ -76,6 +82,14 @@ func Load() (*Config, error) {
 			SubscribeRequestTemplateID: viper.GetInt64("POSTMARK_SUBSCRIBE_REQUEST_TEMPLATE_ID"),
 			NewReleaseTemplateID:       viper.GetInt64("POSTMARK_NEW_RELEASE_TEMPLATE_ID"),
 		},
+	}
+
+	scanInterval, err := time.ParseDuration(viper.GetString("SCANNER_INTERVAL"))
+	if err != nil {
+		return nil, fmt.Errorf("parse scanner interval: %w", err)
+	}
+	cfg.Scanner = Scanner{
+		Interval: scanInterval,
 	}
 
 	// this is one is optional, so parsing is a little bit different

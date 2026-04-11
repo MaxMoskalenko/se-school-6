@@ -1,4 +1,4 @@
-package api
+package scanner
 
 import (
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
@@ -7,18 +7,17 @@ import (
 )
 
 type App struct {
-	repo domain.Repository
-	cfg  Config
-
-	mailSvc mailsvc.Interface
+	repo    domain.Repository
+	cfg     Config
 	gitSvc  gitsvc.Interface
+	mailSvc mailsvc.Interface
 }
 
-func NewApp(repo domain.Repository, cfg Config, mailSvc mailsvc.Interface, gitSvc gitsvc.Interface) *App {
+func NewApp(repo domain.Repository, cfg Config, gitSvc gitsvc.Interface, mailSvc mailsvc.Interface) *App {
 	return &App{
 		repo:    repo,
 		cfg:     cfg,
-		mailSvc: mailSvc,
 		gitSvc:  gitSvc,
+		mailSvc: mailSvc,
 	}
 }

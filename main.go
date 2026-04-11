@@ -1,17 +1,23 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"log"
+	"os/signal"
+	"syscall"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/api"
 	"github.com/MaxMoskalenko/se-school-6/internal/config"
 	"github.com/MaxMoskalenko/se-school-6/internal/ginrouter"
 	"github.com/MaxMoskalenko/se-school-6/internal/gormrepo"
+	"github.com/MaxMoskalenko/se-school-6/internal/scanner"
+	"github.com/MaxMoskalenko/se-school-6/pkg/gitsvc"
 	"github.com/MaxMoskalenko/se-school-6/pkg/mailsvc"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	"golang.org/x/sync/errgroup"
 )
 
 //go:embed migrations/postgres/*.sql
@@ -49,7 +55,11 @@ func main() {
 		NewReleaseTemplateID:       cfg.Postmark.NewReleaseTemplateID,
 	})
 
-	app := api.NewApp(repo, api.Config{HostURL: cfg.Api.HostURL}, mailSvc)
+	gitSvc := gitsvc.NewGithubService(gitsvc.GithubConfig{
+		AuthToken: cfg.Github.AuthToken,
+	})
+
+	app := api.NewApp(repo, api.Config{HostURL: cfg.Api.HostURL}, mailSvc, gitSvc)
 
 	router, err := ginrouter.New(app, ginrouter.Config{
 		Port: cfg.Router.Port,
@@ -58,8 +68,25 @@ func main() {
 		log.Fatalf("failed to create router: %v", err)
 	}
 
-	if err := router.Run(); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+	sc := scanner.NewApp(repo, scanner.Config{
+		Interval: cfg.Scanner.Interval,
+	}, gitSvc, mailSvc)
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		return router.Run()
+	})
+
+	g.Go(func() error {
+		return sc.Run(ctx)
+	})
+
+	if err := g.Wait(); err != nil {
+		log.Fatalf("application stopped: %v", err)
 	}
 }
 

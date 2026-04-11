@@ -12,10 +12,13 @@ type gitRepositoryModel struct {
 	ID          string  `gorm:"column:id;primaryKey"`
 	Name        string  `gorm:"column:name;not null"`
 	Owner       string  `gorm:"column:owner;not null"`
-	LastSeenTag *string `gorm:"column:last_seen_tag"`
+	LastSeenTag   *string     `gorm:"column:last_seen_tag"`
+	LastCheckedAt *time.Time `gorm:"column:last_checked_at"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at"`
+
+	Subscriptions []repositorySubscriptionModel `gorm:"foreignKey:RepositoryID;references:ID"`
 }
 
 func (gitRepositoryModel) TableName() string {
@@ -32,6 +35,16 @@ func (m *gitRepositoryModel) toDomain() (*domain.GitRepository, error) {
 	if m.LastSeenTag != nil {
 		r = r.WithLastSeenTag(*m.LastSeenTag)
 	}
+	if m.LastCheckedAt != nil {
+		r = r.WithLastCheckedAt(m.LastCheckedAt)
+	}
+	for i := range m.Subscriptions {
+		sub, err := m.Subscriptions[i].toDomain()
+		if err != nil {
+			return nil, fmt.Errorf("map subscription: %w", err)
+		}
+		r = r.AttachSubscription(sub)
+	}
 	return r, nil
 }
 
@@ -44,5 +57,6 @@ func gitRepositoryModelFromDomain(r *domain.GitRepository) *gitRepositoryModel {
 	if tag := r.LastSeenTag(); tag != nil {
 		model.LastSeenTag = tag
 	}
+	model.LastCheckedAt = r.LastCheckedAt()
 	return model
 }

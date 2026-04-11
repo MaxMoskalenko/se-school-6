@@ -8,6 +8,7 @@ require (
 	github.com/mrz1836/postmark v1.9.0
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/spf13/viper v1.21.0
+	golang.org/x/sync v0.19.0
 	gorm.io/driver/postgres v1.6.0
 )
 
@@ -30,7 +31,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/sync v0.19.0 // indirect
 )
 
 require (

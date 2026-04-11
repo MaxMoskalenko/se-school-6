@@ -47,9 +47,12 @@ func applyRepositorySubscriptionsJoins(query *gorm.DB, params domain.ReadReposit
 }
 
 func applyRepositorySubscriptionsFilters(query *gorm.DB, params domain.ReadRepositorySubscriptionsParams) (*gorm.DB, error) {
-	if params.ByUserEmail == nil {
-		return nil, fmt.Errorf("missing filter: user email is required")
+	if params.ByUserEmail != nil {
+		query = query.Where("\"User\".email = ?", *params.ByUserEmail)
 	}
-	query = query.Where("\"User\".email = ?", *params.ByUserEmail)
+	if params.OnlyActive {
+		query = query.Where("repository_subscriptions.confirmed_at IS NOT NULL").
+			Where("repository_subscriptions.unsubscribed_at IS NULL")
+	}
 	return query, nil
 }
