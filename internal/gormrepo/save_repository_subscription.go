@@ -2,8 +2,10 @@ package gormrepo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -25,6 +27,9 @@ func (r *GormRepository) SaveRepositorySubscription(ctx context.Context, subscri
 		}
 
 		if err := query.Create(model).Error; err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return domain.ErrAlreadySubscribed
+			}
 			return err
 		}
 

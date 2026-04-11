@@ -25,12 +25,12 @@ func New(app *api.App, cfg Config) (Router, error) {
 	// Public routes
 	r.GET("/auth", getAuthHandler)
 
-	// Private routes
-	privateGroup := r.Use()
-	privateGroup.POST("/subscribe", factory.Handler(postSubscribeHandler))
-	privateGroup.GET("/confirm/:token", factory.Handler(getConfirmHandler))
-	privateGroup.GET("/unsubscribe/:token", factory.Handler(getUnsubscribeHandler))
-	privateGroup.GET("/subscriptions", factory.Handler(getSubscriptionsHandler))
+	// API routes
+	apiGroup := r.Group("/api")
+	apiGroup.POST("/subscribe", factory.Handler(postSubscribeHandler))
+	apiGroup.GET("/confirm/:token", factory.Handler(getConfirmHandler))
+	apiGroup.GET("/unsubscribe/:token", factory.Handler(getUnsubscribeHandler))
+	apiGroup.GET("/subscriptions", factory.Handler(getSubscriptionsHandler))
 
 	return Router{
 		Engine: r,

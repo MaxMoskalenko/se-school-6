@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 
@@ -28,7 +29,7 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 	})
 	if err != nil {
 		log.Printf("error: failed to read or create user email=%s: %v", cmd.Email, err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
 	gitRepo, err := a.repo.ReadGitRepository(ctx, domain.ReadGitRepositoryParams{
@@ -42,8 +43,7 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 			return domain.NewError(http.StatusInternalServerError, ghErr)
 		}
 		if !exists {
-			log.Printf("error: repo not found on github owner=%s name=%s", cmd.RepoOwner, cmd.RepoName)
-			return domain.NewError(http.StatusNotFound, errRepoNotFound)
+			return domain.NewError(http.StatusNotFound, domain.ErrRepoNotFound)
 		}
 
 		gitRepoToCreate := domain.NewGitRepository(cmd.RepoOwner, cmd.RepoName).WithNewID()
@@ -54,7 +54,7 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 		})
 		if err != nil {
 			log.Printf("error: failed to create git repository owner=%s name=%s: %v", cmd.RepoOwner, cmd.RepoName, err)
-			return domain.NewError(http.StatusInternalServerError, err)
+			return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 		}
 	}
 
@@ -77,13 +77,13 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 	confirmActionLink, err := subscribeDOIToken.ToHttpLink(a.cfg.HostURL)
 	if err != nil {
 		log.Printf("error: failed to generate confirm action link: %v", err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
 	unsubscribeActionLink, err := unsubscribeDOIToken.ToHttpLink(a.cfg.HostURL)
 	if err != nil {
 		log.Printf("error: failed to generate unsubscribe action link: %v", err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
 	// sending email and saving subscription should be in the same transaction
@@ -107,8 +107,11 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 
 		return nil
 	}); err != nil {
+		if errors.Is(err, domain.ErrAlreadySubscribed) {
+			return domain.NewError(http.StatusConflict, domain.ErrAlreadySubscribed)
+		}
 		log.Printf("error: failed to save subscription and send email email=%s: %v", cmd.Email, err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
 	return nil

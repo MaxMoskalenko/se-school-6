@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"log"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
 )
@@ -14,10 +15,11 @@ func (a *App) GetSubscriptions(ctx context.Context, q GetSubscriptionsQuery) ([]
 	subs, err := a.repo.ReadRepositorySubscriptions(ctx, domain.ReadRepositorySubscriptionsParams{
 		ByUserEmail:    &q.Email,
 		WithRepository: true,
-		WithDOITokens:  true,
+		WithUser:       true,
 	})
 	if err != nil {
-		return nil, err
+		log.Printf("error: failed to read subscriptions for email=%s: %v", q.Email, err)
+		return nil, domain.ErrInternal
 	}
 
 	return subs, nil

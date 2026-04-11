@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -15,31 +16,32 @@ type UnsubscribeCommand struct {
 
 func (a *App) UnsubscribeFromRepo(ctx context.Context, cmd UnsubscribeCommand) *domain.Error {
 	sub, err := a.repo.ReadRepositorySubscription(ctx, domain.ReadRepositorySubscriptionParams{
-		ByDOIToken:    &cmd.Token,
+		ByDOIToken:     &cmd.Token,
 		WithDOITokens:  true,
 		WithUser:       true,
 		WithRepository: true,
 	})
 	if err != nil {
+		if errors.Is(err, domain.ErrNotFound) {
+			return domain.NewError(http.StatusNotFound, domain.ErrNotFound)
+		}
 		log.Printf("error: failed to read subscription by DOI token: %v", err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
 	if sub.DOITokenAction(cmd.Token) != domain.DOISubscriptionTokenActionUnsubscribe {
-		log.Printf("error: invalid DOI token action for unsubscribe, token=%s", cmd.Token)
-		return domain.NewError(http.StatusBadRequest, errInvalidToken)
+		return domain.NewError(http.StatusBadRequest, domain.ErrInvalidToken)
 	}
 
 	if !sub.IsActive() {
-		log.Printf("error: subscription is not active, token=%s", cmd.Token)
-		return domain.NewError(http.StatusConflict, errNotActive)
+		return domain.NewError(http.StatusConflict, domain.ErrNotActive)
 	}
 
 	now := time.Now()
 	sub = sub.WithUnsubscribedAt(&now)
 	if err := a.repo.SaveRepositorySubscription(ctx, sub, domain.SaveRepositorySubscriptionParams{}); err != nil {
 		log.Printf("error: failed to save unsubscribed subscription: %v", err)
-		return domain.NewError(http.StatusInternalServerError, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
 	return nil

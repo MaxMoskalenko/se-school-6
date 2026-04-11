@@ -2,6 +2,7 @@ package gormrepo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
@@ -15,6 +16,9 @@ func (r *GormRepository) ReadRepositorySubscription(ctx context.Context, params 
 
 	var model repositorySubscriptionModel
 	if err := query.First(&model).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrNotFound
+		}
 		return nil, err
 	}
 
