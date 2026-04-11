@@ -14,6 +14,14 @@ type Config struct {
 	Postmark Postmark `mapstructure:"postmark"`
 	Github   Github   `mapstructure:"github"`
 	Scanner  Scanner  `mapstructure:"scanner"`
+	Redis    Redis    `mapstructure:"redis"`
+}
+
+type Redis struct {
+	Addr     string        `mapstructure:"addr"`
+	Password string        `mapstructure:"password"`
+	DB       int           `mapstructure:"db"`
+	CacheTTL time.Duration `mapstructure:"cache_ttl"`
 }
 
 type Router struct {
@@ -99,6 +107,17 @@ func Load() (*Config, error) {
 	// this is one is optional, so parsing is a little bit different
 	if token := viper.GetString("GITHUB_AUTH_TOKEN"); token != "" {
 		cfg.Github.AuthToken = &token
+	}
+
+	cacheTTL, err := time.ParseDuration(viper.GetString("REDIS_CACHE_TTL"))
+	if err != nil {
+		return nil, fmt.Errorf("parse redis cache ttl: %w", err)
+	}
+	cfg.Redis = Redis{
+		Addr:     viper.GetString("REDIS_ADDR"),
+		Password: viper.GetString("REDIS_PASSWORD"),
+		DB:       viper.GetInt("REDIS_DB"),
+		CacheTTL: cacheTTL,
 	}
 
 	return cfg, nil

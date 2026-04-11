@@ -27,7 +27,11 @@ func New(app *api.App, cfg Config) (Router, error) {
 	apiGroup.POST("/auth", factory.Handler(postAuthHandler))
 
 	authorized := apiGroup.Group("")
-	authorized.Use(authMiddleware(cfg.JWTSecret))
+
+	if cfg.ValidateAuthEmail {
+		authorized.Use(authMiddleware(cfg.JWTSecret))
+	}
+
 	authorized.POST("/subscribe", factory.Handler(postSubscribeHandler))
 	authorized.GET("/confirm/:token", factory.Handler(getConfirmHandler))
 	authorized.GET("/unsubscribe/:token", factory.Handler(getUnsubscribeHandler))

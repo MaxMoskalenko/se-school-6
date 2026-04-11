@@ -13,9 +13,11 @@ import (
 	"github.com/MaxMoskalenko/se-school-6/internal/ginrouter"
 	"github.com/MaxMoskalenko/se-school-6/internal/gormrepo"
 	"github.com/MaxMoskalenko/se-school-6/internal/scanner"
+	"github.com/MaxMoskalenko/se-school-6/pkg/cache"
 	"github.com/MaxMoskalenko/se-school-6/pkg/gitsvc"
 	"github.com/MaxMoskalenko/se-school-6/pkg/mailsvc"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/redis/go-redis/v9"
 	"github.com/pressly/goose/v3"
 	"golang.org/x/sync/errgroup"
 )
@@ -55,9 +57,19 @@ func main() {
 		NewReleaseTemplateID:       cfg.Postmark.NewReleaseTemplateID,
 	})
 
-	gitSvc := gitsvc.NewGithubService(gitsvc.GithubConfig{
-		AuthToken: cfg.Github.AuthToken,
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     cfg.Redis.Addr,
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
 	})
+
+	gitSvc := gitsvc.NewCachedGithubService(
+		gitsvc.NewGithubService(gitsvc.GithubConfig{
+			AuthToken: cfg.Github.AuthToken,
+		}),
+		cache.NewRedis(redisClient),
+		cfg.Redis.CacheTTL,
+	)
 
 	app := api.NewApp(repo, api.Config{HostURL: cfg.Api.HostURL, JWTSecret: cfg.Api.JWTSecret}, mailSvc, gitSvc)
 

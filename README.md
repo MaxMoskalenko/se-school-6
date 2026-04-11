@@ -99,6 +99,10 @@ Unit tests cover all API methods and scanner logic using mock implementations of
 | `POSTMARK_NEW_RELEASE_TEMPLATE_ID`       | Postmark template for release email                               |                         |
 | `GITHUB_AUTH_TOKEN`                      | GitHub token (optional, raises rate limit from 60 to 5000 req/hr) |                         |
 | `SCANNER_INTERVAL`                       | How often to check for new releases                               | `1h`                    |
+| `REDIS_ADDR`                             | Redis server address                                              | `localhost:6379`        |
+| `REDIS_PASSWORD`                         | Redis password                                                    |                         |
+| `REDIS_DB`                               | Redis database number                                             | `0`                     |
+| `REDIS_CACHE_TTL`                        | TTL for cached GitHub API responses                               | `10m`                   |
 
 ## What failed to implement
 
