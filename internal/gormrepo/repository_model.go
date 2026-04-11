@@ -28,9 +28,6 @@ func (gitRepositoryModel) TableName() string {
 
 func (m *gitRepositoryModel) toDomain() (*domain.GitRepository, error) {
 	id, err := uuid.Parse(m.ID)
-	if err != nil {
-		return nil, fmt.Errorf("parse repository id: %w", err)
-	}
 
 	r := domain.NewGitRepository(m.Owner, m.Name).WithID(id)
 	if m.LastSeenTag != nil {
