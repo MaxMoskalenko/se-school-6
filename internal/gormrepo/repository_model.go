@@ -10,10 +10,10 @@ import (
 )
 
 type gitRepositoryModel struct {
-	ID          string  `gorm:"column:id;primaryKey"`
-	Name        string  `gorm:"column:name;not null"`
-	Owner       string  `gorm:"column:owner;not null"`
-	LastSeenTag   *string     `gorm:"column:last_seen_tag"`
+	ID            string     `gorm:"column:id;primaryKey"`
+	Name          string     `gorm:"column:name;not null"`
+	Owner         string     `gorm:"column:owner;not null"`
+	LastSeenTag   *string    `gorm:"column:last_seen_tag"`
 	LastCheckedAt *time.Time `gorm:"column:last_checked_at"`
 
 	CreatedAt time.Time `gorm:"column:created_at"`
