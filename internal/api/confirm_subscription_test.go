@@ -108,7 +108,7 @@ func TestConfirmSubscription_AlreadyConfirmed(t *testing.T) {
 		Token: tokenID.String(),
 	})
 
-	assert.NotNil(t, dErr)
+	assert.Nil(t, dErr)
 	assert.Equal(t, http.StatusConflict, dErr.Code())
 }
 
