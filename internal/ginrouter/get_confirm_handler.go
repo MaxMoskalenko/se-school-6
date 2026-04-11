@@ -12,7 +12,7 @@ type getConfirmRequest struct {
 func getConfirmHandler(app *api.App, c *gin.Context) {
 	var req getConfirmRequest
 	if err := c.BindUri(&req); err != nil {
-		c.AsciiJSON(400, gin.H{"error": err.Error()})
+		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})
 		return
 	}
 

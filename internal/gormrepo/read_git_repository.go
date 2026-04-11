@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
 	"gorm.io/gorm"
@@ -46,7 +47,7 @@ func applyGitRepositoryFilters(query *gorm.DB, params domain.ReadGitRepositoryPa
 	if params.ByOwner == nil || params.ByName == nil {
 		return nil, fmt.Errorf("missing filter: owner and name are required")
 	}
-	query = query.Where("owner = ?", *params.ByOwner)
-	query = query.Where("name = ?", *params.ByName)
+	query = query.Where("owner = ?", strings.ToLower(*params.ByOwner))
+	query = query.Where("name = ?", strings.ToLower(*params.ByName))
 	return query, nil
 }

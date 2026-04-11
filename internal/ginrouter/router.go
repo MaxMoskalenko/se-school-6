@@ -1,20 +1,21 @@
 package ginrouter
 
 import (
+	"context"
+	"net/http"
+
 	"github.com/MaxMoskalenko/se-school-6/internal/api"
 	"github.com/MaxMoskalenko/se-school-6/pkg/bindvalidator"
 	"github.com/gin-gonic/gin"
 )
 
 type Router struct {
-	*gin.Engine
-	cfg Config
+	server *http.Server
 }
 
 func New(app *api.App, cfg Config) (Router, error) {
 	factory := NewHandlerFactory(app)
 
-	// Register custom validation rules
 	if err := bindvalidator.Register(); err != nil {
 		return Router{}, err
 	}
@@ -22,10 +23,6 @@ func New(app *api.App, cfg Config) (Router, error) {
 	r := gin.Default()
 	r.Use(gin.Recovery())
 
-	// Public routes
-	r.GET("/auth", getAuthHandler)
-
-	// API routes
 	apiGroup := r.Group("/api")
 	apiGroup.POST("/subscribe", factory.Handler(postSubscribeHandler))
 	apiGroup.GET("/confirm/:token", factory.Handler(getConfirmHandler))
@@ -33,11 +30,26 @@ func New(app *api.App, cfg Config) (Router, error) {
 	apiGroup.GET("/subscriptions", factory.Handler(getSubscriptionsHandler))
 
 	return Router{
-		Engine: r,
-		cfg:    cfg,
+		server: &http.Server{
+			Addr:    ":" + cfg.Port,
+			Handler: r,
+		},
 	}, nil
 }
 
-func (r Router) Run() error {
-	return r.Engine.Run(":" + r.cfg.Port)
+func (r Router) Run(ctx context.Context) error {
+	errCh := make(chan error, 1)
+	go func() {
+		if err := r.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errCh <- err
+		}
+		close(errCh)
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-ctx.Done():
+		return r.server.Shutdown(context.Background())
+	}
 }

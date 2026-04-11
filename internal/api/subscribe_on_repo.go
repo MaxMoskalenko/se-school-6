@@ -40,7 +40,7 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 		exists, ghErr := a.gitSvc.RepoExists(ctx, cmd.RepoOwner, cmd.RepoName)
 		if ghErr != nil {
 			log.Printf("error: failed to check repo on github owner=%s name=%s: %v", cmd.RepoOwner, cmd.RepoName, ghErr)
-			return domain.NewError(http.StatusInternalServerError, ghErr)
+			return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 		}
 		if !exists {
 			return domain.NewError(http.StatusNotFound, domain.ErrRepoNotFound)
@@ -58,29 +58,37 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 		}
 	}
 
-	sub := domain.NewSubscription().
+	userID := user.ID().String()
+	repoID := gitRepo.ID().String()
+
+	sub, err := a.repo.ReadRepositorySubscription(ctx, domain.ReadRepositorySubscriptionParams{
+		ByUserID:            &userID,
+		ByRepositoryID:      &repoID,
+		OnlyNonUnsubscribed: true,
+	})
+	if err != nil && !errors.Is(err, domain.ErrNotFound) {
+		log.Printf("error: failed to read or create subscription email=%s: %v", cmd.Email, err)
+		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
+	}
+
+	// if subscription already exists and is active, return conflict
+	if err == nil {
+		return domain.NewError(http.StatusConflict, domain.ErrAlreadySubscribed)
+	}
+
+	sub = domain.NewSubscription().
 		WithUser(user).
 		WithGitRepository(gitRepo).
-		WithNewID()
+		WithNewID().
+		WithNewTokens()
 
-	subscribeDOIToken := domain.NewDOISubscriptionToken(
-		domain.DOISubscriptionTokenActionSubscribe,
-	).WithNewID()
-	unsubscribeDOIToken := domain.NewDOISubscriptionToken(
-		domain.DOISubscriptionTokenActionUnsubscribe,
-	).WithNewID()
-
-	sub = sub.
-		WithDOISubscriptionToken(subscribeDOIToken).
-		WithDOISubscriptionToken(unsubscribeDOIToken)
-
-	confirmActionLink, err := subscribeDOIToken.ToHttpLink(a.cfg.HostURL)
+	confirmActionLink, err := sub.SubscribeToken().ToHttpLink(a.cfg.HostURL)
 	if err != nil {
 		log.Printf("error: failed to generate confirm action link: %v", err)
 		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}
 
-	unsubscribeActionLink, err := unsubscribeDOIToken.ToHttpLink(a.cfg.HostURL)
+	unsubscribeActionLink, err := sub.UnsubscribeToken().ToHttpLink(a.cfg.HostURL)
 	if err != nil {
 		log.Printf("error: failed to generate unsubscribe action link: %v", err)
 		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
@@ -99,17 +107,14 @@ func (a *App) SubscribeOnRepo(ctx context.Context, cmd SubscribeOnRepoCommand) *
 			Repo:                  cmd.RepoName,
 			ConfirmActionLink:     confirmActionLink,
 			UnsubscribeActionLink: unsubscribeActionLink,
-			ConfirmationToken:     subscribeDOIToken.ID().String(),
-			UnsubscribeToken:      unsubscribeDOIToken.ID().String(),
+			ConfirmationToken:     sub.SubscribeToken().ID().String(),
+			UnsubscribeToken:      sub.UnsubscribeToken().ID().String(),
 		}); err != nil {
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		if errors.Is(err, domain.ErrAlreadySubscribed) {
-			return domain.NewError(http.StatusConflict, domain.ErrAlreadySubscribed)
-		}
 		log.Printf("error: failed to save subscription and send email email=%s: %v", cmd.Email, err)
 		return domain.NewError(http.StatusInternalServerError, domain.ErrInternal)
 	}

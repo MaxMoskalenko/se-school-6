@@ -16,7 +16,7 @@ type postSubscribeRequest struct {
 func postSubscribeHandler(app *api.App, c *gin.Context) {
 	var req postSubscribeRequest
 	if err := c.BindJSON(&req); err != nil {
-		c.AsciiJSON(400, gin.H{"error": err.Error()})
+		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})
 		return
 	}
 

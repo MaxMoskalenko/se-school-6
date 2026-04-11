@@ -78,7 +78,7 @@ func main() {
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return router.Run()
+		return router.Run(ctx)
 	})
 
 	g.Go(func() error {

@@ -29,7 +29,7 @@ func (r *GormRepository) ReadUser(ctx context.Context, params domain.ReadUserPar
 	}
 
 	if params.CreateIfNotExists == nil {
-		return nil, gorm.ErrRecordNotFound
+		return nil, domain.ErrNotFound
 	}
 
 	newModel := userModelFromDomain(params.CreateIfNotExists)

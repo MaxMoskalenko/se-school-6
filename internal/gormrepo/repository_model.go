@@ -2,6 +2,7 @@ package gormrepo
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
@@ -51,8 +52,8 @@ func (m *gitRepositoryModel) toDomain() (*domain.GitRepository, error) {
 func gitRepositoryModelFromDomain(r *domain.GitRepository) *gitRepositoryModel {
 	model := &gitRepositoryModel{
 		ID:    r.ID().String(),
-		Name:  r.Name(),
-		Owner: r.Owner(),
+		Name:  strings.ToLower(r.Name()),
+		Owner: strings.ToLower(r.Owner()),
 	}
 	if tag := r.LastSeenTag(); tag != nil {
 		model.LastSeenTag = tag

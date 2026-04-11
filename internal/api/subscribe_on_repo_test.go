@@ -29,6 +29,7 @@ func TestSubscribeOnRepo_Success(t *testing.T) {
 
 	repo.On("ReadUser", mock.Anything, mock.Anything).Return(user, nil)
 	repo.On("ReadGitRepository", mock.Anything, mock.Anything).Return(gitRepo, nil)
+	repo.On("ReadRepositorySubscription", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
 	repo.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
 	repo.On("SaveRepositorySubscription", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mail.On("SendSubscribeRequestEmail", mock.Anything, mock.Anything).Return(nil)
@@ -120,6 +121,7 @@ func TestSubscribeOnRepo_RepoNotInDB_ExistsOnGithub_CreateSucceeds(t *testing.T)
 	repo.On("ReadGitRepository", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound).Once()
 	git.On("RepoExists", mock.Anything, "owner", "repo").Return(true, nil)
 	repo.On("ReadGitRepository", mock.Anything, mock.Anything).Return(gitRepo, nil).Once()
+	repo.On("ReadRepositorySubscription", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
 	repo.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
 	repo.On("SaveRepositorySubscription", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mail.On("SendSubscribeRequestEmail", mock.Anything, mock.Anything).Return(nil)
@@ -142,11 +144,11 @@ func TestSubscribeOnRepo_AlreadySubscribed(t *testing.T) {
 
 	user := domain.NewUser("test@example.com").WithNewID()
 	gitRepo := domain.NewGitRepository("owner", "repo").WithNewID()
+	existingSub := domain.NewSubscription().WithNewID().WithUser(user).WithGitRepository(gitRepo)
 
 	repo.On("ReadUser", mock.Anything, mock.Anything).Return(user, nil)
 	repo.On("ReadGitRepository", mock.Anything, mock.Anything).Return(gitRepo, nil)
-	repo.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
-	repo.On("SaveRepositorySubscription", mock.Anything, mock.Anything, mock.Anything).Return(domain.ErrAlreadySubscribed)
+	repo.On("ReadRepositorySubscription", mock.Anything, mock.Anything).Return(existingSub, nil)
 
 	dErr := app.SubscribeOnRepo(context.Background(), SubscribeOnRepoCommand{
 		Email:     "test@example.com",
@@ -156,6 +158,7 @@ func TestSubscribeOnRepo_AlreadySubscribed(t *testing.T) {
 
 	assert.NotNil(t, dErr)
 	assert.Equal(t, http.StatusConflict, dErr.Code())
+	repo.AssertNotCalled(t, "WithTransaction", mock.Anything, mock.Anything)
 }
 
 func TestSubscribeOnRepo_SendEmailFails(t *testing.T) {
@@ -169,9 +172,33 @@ func TestSubscribeOnRepo_SendEmailFails(t *testing.T) {
 
 	repo.On("ReadUser", mock.Anything, mock.Anything).Return(user, nil)
 	repo.On("ReadGitRepository", mock.Anything, mock.Anything).Return(gitRepo, nil)
+	repo.On("ReadRepositorySubscription", mock.Anything, mock.Anything).Return(nil, domain.ErrNotFound)
 	repo.On("WithTransaction", mock.Anything, mock.Anything).Return(nil)
 	repo.On("SaveRepositorySubscription", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mail.On("SendSubscribeRequestEmail", mock.Anything, mock.Anything).Return(fmt.Errorf("email error"))
+
+	dErr := app.SubscribeOnRepo(context.Background(), SubscribeOnRepoCommand{
+		Email:     "test@example.com",
+		RepoOwner: "owner",
+		RepoName:  "repo",
+	})
+
+	assert.NotNil(t, dErr)
+	assert.Equal(t, http.StatusInternalServerError, dErr.Code())
+}
+
+func TestSubscribeOnRepo_ReadSubscriptionFails(t *testing.T) {
+	repo := mockrepo.New()
+	mail := mailsvc.NewMock()
+	git := gitsvc.NewMock()
+	app := newTestApp(repo, mail, git)
+
+	user := domain.NewUser("test@example.com").WithNewID()
+	gitRepo := domain.NewGitRepository("owner", "repo").WithNewID()
+
+	repo.On("ReadUser", mock.Anything, mock.Anything).Return(user, nil)
+	repo.On("ReadGitRepository", mock.Anything, mock.Anything).Return(gitRepo, nil)
+	repo.On("ReadRepositorySubscription", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("db error"))
 
 	dErr := app.SubscribeOnRepo(context.Background(), SubscribeOnRepoCommand{
 		Email:     "test@example.com",

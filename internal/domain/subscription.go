@@ -97,6 +97,32 @@ func (s Subscription) DOITokens() []DOISubscriptionTokenAction {
 	return actions
 }
 
+func (s *Subscription) WithNewTokens() *Subscription {
+	s.doiSubscriptionTokens = []*DOISubscriptionToken{
+		NewDOISubscriptionToken(DOISubscriptionTokenActionSubscribe).WithNewID(),
+		NewDOISubscriptionToken(DOISubscriptionTokenActionUnsubscribe).WithNewID(),
+	}
+	return s
+}
+
+func (s Subscription) SubscribeToken() *DOISubscriptionToken {
+	for _, t := range s.doiSubscriptionTokens {
+		if t.Action() == DOISubscriptionTokenActionSubscribe {
+			return t
+		}
+	}
+	return nil
+}
+
+func (s Subscription) UnsubscribeToken() *DOISubscriptionToken {
+	for _, t := range s.doiSubscriptionTokens {
+		if t.Action() == DOISubscriptionTokenActionUnsubscribe {
+			return t
+		}
+	}
+	return nil
+}
+
 func (s Subscription) DOITokenAction(token string) DOISubscriptionTokenAction {
 	for _, t := range s.doiSubscriptionTokens {
 		if t.ID().String() == token {

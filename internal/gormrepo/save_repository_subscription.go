@@ -2,34 +2,27 @@ package gormrepo
 
 import (
 	"context"
-	"errors"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 func (r *GormRepository) SaveRepositorySubscription(ctx context.Context, subscription *domain.Subscription, params domain.SaveRepositorySubscriptionParams) error {
 	model := subscriptionModelFromDomain(subscription)
 
-	// if confirmed_at or unsubscribed_at is set, updates the existing record,
-	// otherwise returns an error if the record already exists (to prevent duplicate subscriptions)
-	columnsToUpdate := r.defineSubscriptionUpsertColumns(subscription)
-
 	return r.WithTransaction(ctx, func(ctx context.Context) error {
-		query := r.getDB(ctx)
+		columnsToUpdate := defineSubscriptionUpdateColumns(subscription)
 
 		if len(columnsToUpdate) > 0 {
-			query = query.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "user_id"}, {Name: "repository_id"}},
-				DoUpdates: clause.AssignmentColumns(columnsToUpdate),
-			})
+			if err := r.getDB(ctx).
+				Model(&repositorySubscriptionModel{ID: model.ID}).
+				Select(columnsToUpdate).
+				Updates(model).Error; err != nil {
+				return err
+			}
+			return nil
 		}
 
-		if err := query.Create(model).Error; err != nil {
-			if errors.Is(err, gorm.ErrDuplicatedKey) {
-				return domain.ErrAlreadySubscribed
-			}
+		if err := r.getDB(ctx).Create(model).Error; err != nil {
 			return err
 		}
 
@@ -46,18 +39,16 @@ func (r *GormRepository) SaveRepositorySubscription(ctx context.Context, subscri
 	})
 }
 
-func (r *GormRepository) defineSubscriptionUpsertColumns(subscription *domain.Subscription) []string {
-	columns := []string{}
+func defineSubscriptionUpdateColumns(subscription *domain.Subscription) []string {
+	var columns []string
 	if subscription.ConfirmedAt() != nil {
 		columns = append(columns, "confirmed_at")
 	}
 	if subscription.UnsubscribedAt() != nil {
 		columns = append(columns, "unsubscribed_at")
 	}
-
 	if len(columns) > 0 {
 		columns = append(columns, "updated_at")
 	}
-
 	return columns
 }

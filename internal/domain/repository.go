@@ -46,7 +46,10 @@ type SaveRepositorySubscriptionParams struct {
 }
 
 type ReadRepositorySubscriptionParams struct {
-	ByDOIToken *string
+	ByDOIToken          *string
+	ByUserID            *string
+	ByRepositoryID      *string
+	OnlyNonUnsubscribed bool
 
 	WithDOITokens  bool
 	WithUser       bool

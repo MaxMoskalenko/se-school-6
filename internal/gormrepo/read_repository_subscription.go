@@ -3,7 +3,6 @@ package gormrepo
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/MaxMoskalenko/se-school-6/internal/domain"
 	"gorm.io/gorm"
@@ -22,12 +21,7 @@ func (r *GormRepository) ReadRepositorySubscription(ctx context.Context, params 
 		return nil, err
 	}
 
-	sub, err := model.toDomain()
-	if err != nil {
-		return nil, fmt.Errorf("map subscription: %w", err)
-	}
-
-	return sub, nil
+	return model.toDomain()
 }
 
 func applyRepositorySubscriptionJoins(query *gorm.DB, params domain.ReadRepositorySubscriptionParams) *gorm.DB {
@@ -49,6 +43,15 @@ func applyRepositorySubscriptionJoins(query *gorm.DB, params domain.ReadReposito
 func applyRepositorySubscriptionFilters(query *gorm.DB, params domain.ReadRepositorySubscriptionParams) *gorm.DB {
 	if params.ByDOIToken != nil {
 		query = query.Where("doi_subscription_tokens.id = ?", *params.ByDOIToken)
+	}
+	if params.ByUserID != nil {
+		query = query.Where("repository_subscriptions.user_id = ?", *params.ByUserID)
+	}
+	if params.ByRepositoryID != nil {
+		query = query.Where("repository_subscriptions.repository_id = ?", *params.ByRepositoryID)
+	}
+	if params.OnlyNonUnsubscribed {
+		query = query.Where("repository_subscriptions.unsubscribed_at IS NULL")
 	}
 	return query
 }

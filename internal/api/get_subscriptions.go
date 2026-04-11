@@ -16,6 +16,7 @@ func (a *App) GetSubscriptions(ctx context.Context, q GetSubscriptionsQuery) ([]
 		ByUserEmail:    &q.Email,
 		WithRepository: true,
 		WithUser:       true,
+		OnlyActive:     true,
 	})
 	if err != nil {
 		log.Printf("error: failed to read subscriptions for email=%s: %v", q.Email, err)

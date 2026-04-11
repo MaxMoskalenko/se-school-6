@@ -19,7 +19,7 @@ type subscriptionResponse struct {
 func getSubscriptionsHandler(app *api.App, c *gin.Context) {
 	var req getSubscriptionsRequest
 	if err := c.BindQuery(&req); err != nil {
-		c.AsciiJSON(400, gin.H{"error": err.Error()})
+		c.AsciiJSON(400, gin.H{"error": validationErrorMessage(err)})
 		return
 	}
 

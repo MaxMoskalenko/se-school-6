@@ -49,9 +49,9 @@ func (t DOISubscriptionToken) ToHttpLink(url string) (string, error) {
 
 	switch t.action {
 	case DOISubscriptionTokenActionSubscribe:
-		return trimmed + "/confirm/" + t.ID().String(), nil
+		return trimmed + "/api/confirm/" + t.ID().String(), nil
 	case DOISubscriptionTokenActionUnsubscribe:
-		return trimmed + "/subscription/" + t.ID().String(), nil
+		return trimmed + "/api/unsubscribe/" + t.ID().String(), nil
 	default:
 		return "", nil
 	}

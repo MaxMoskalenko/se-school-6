@@ -11,8 +11,8 @@ func (r *GormRepository) SaveGitRepository(ctx context.Context, repo *domain.Git
 	model := gitRepositoryModelFromDomain(repo)
 	return r.getDB(ctx).
 		Clauses(clause.OnConflict{
-			OnConstraint: "idx_git_repositories_owner_name_lower",
-			DoUpdates:    clause.AssignmentColumns([]string{"last_seen_tag", "last_checked_at", "updated_at"}),
+			Columns:   []clause.Column{{Name: "owner"}, {Name: "name"}},
+			DoUpdates: clause.AssignmentColumns([]string{"last_seen_tag", "last_checked_at", "updated_at"}),
 		}).
 		Create(model).Error
 }

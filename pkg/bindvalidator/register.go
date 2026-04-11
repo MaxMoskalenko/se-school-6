@@ -8,7 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var repoRegex = regexp.MustCompile(`[0-9a-zA-Z\-_]+/[0-9a-zA-Z\-_]+`)
+var repoRegex = regexp.MustCompile(`^[0-9a-zA-Z\-_.]+/[0-9a-zA-Z\-_.]+$`)
 
 func Register() error {
 	v, ok := binding.Validator.Engine().(*validator.Validate)
